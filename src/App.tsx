@@ -2,6 +2,11 @@ import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import exifr from "exifr";
 import JSZip from "jszip";
 import { Lightbox, type LightboxImage } from "./components/Lightbox";
+import { SettingsPanel } from "./components/SettingsPanel";
+import type { ImageConfig } from "./types/config";
+import { DEFAULT_CONFIG } from "./types/config";
+import { loadConfig, debouncedSaveConfig } from "./utils/configStorage";
+import { formatDate } from "./utils/formatPresets";
 
 interface ProcessedImage {
   id: string;
@@ -10,39 +15,6 @@ interface ProcessedImage {
   timestamp: string;
   usedFallback: boolean;
   status: "processing" | "done" | "error";
-}
-
-interface ImageConfig {
-  fontSize: number;
-  fontColor: string;
-  strokeColor: string;
-  strokeWidth: number;
-  position: "bottomRight" | "bottomLeft" | "topRight" | "topLeft";
-  offsetX: number;
-  offsetY: number;
-  dateFormat: string;
-}
-
-const DEFAULT_CONFIG: ImageConfig = {
-  fontSize: 120,
-  fontColor: "#FBBF24",
-  strokeColor: "#000000",
-  strokeWidth: 5,
-  position: "bottomRight",
-  offsetX: 20,
-  offsetY: 20,
-  dateFormat: "YYYY-MM-DD HH:mm:ss",
-};
-
-function formatDate(date: Date, format: string): string {
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  return format
-    .replace("YYYY", date.getFullYear().toString())
-    .replace("MM", pad(date.getMonth() + 1))
-    .replace("DD", pad(date.getDate()))
-    .replace("HH", pad(date.getHours()))
-    .replace("mm", pad(date.getMinutes()))
-    .replace("ss", pad(date.getSeconds()));
 }
 
 async function extractImageMetadata(
@@ -98,8 +70,8 @@ async function processImage(
         24
       );
 
-      // Set up text styling
-      ctx.font = `bold ${relativeFontSize}px "Instrument Sans", system-ui, sans-serif`;
+      // Set up text styling with configurable font family
+      ctx.font = `bold ${relativeFontSize}px "${config.fontFamily}", system-ui, sans-serif`;
       ctx.textBaseline = "bottom";
 
       // Calculate text position
@@ -125,11 +97,26 @@ async function processImage(
           break;
       }
 
+      // Apply drop shadow if enabled
+      if (config.dropShadowEnabled) {
+        ctx.shadowBlur = config.dropShadowBlur;
+        ctx.shadowOffsetX = config.dropShadowOffsetX;
+        ctx.shadowOffsetY = config.dropShadowOffsetY;
+        ctx.shadowColor = config.dropShadowColor;
+      }
+
       // Draw text stroke
-      ctx.strokeStyle = config.strokeColor;
-      ctx.lineWidth = config.strokeWidth;
-      ctx.lineJoin = "round";
-      ctx.strokeText(timestamp, x, y);
+      if (config.strokeWidth > 0) {
+        ctx.strokeStyle = config.strokeColor;
+        ctx.lineWidth = config.strokeWidth;
+        ctx.lineJoin = "round";
+        ctx.strokeText(timestamp, x, y);
+      }
+
+      // Reset shadow for fill (only apply shadow once)
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
 
       // Draw text fill
       ctx.fillStyle = config.fontColor;
@@ -162,11 +149,30 @@ function App() {
   const [images, setImages] = useState<ProcessedImage[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [config, setConfig] = useState<ImageConfig>(DEFAULT_CONFIG);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const resultsSectionRef = useRef<HTMLElement | null>(null);
   const prevProcessingRef = useRef<boolean>(false);
+
+  // Load config from localStorage on mount
+  useEffect(() => {
+    const savedConfig = loadConfig();
+    setConfig(savedConfig);
+  }, []);
+
+  // Save config to localStorage when it changes
+  const handleConfigChange = useCallback((newConfig: ImageConfig) => {
+    setConfig(newConfig);
+    debouncedSaveConfig(newConfig);
+  }, []);
+
+  const handleResetConfig = useCallback(() => {
+    setConfig(DEFAULT_CONFIG);
+    debouncedSaveConfig(DEFAULT_CONFIG);
+  }, []);
 
   const handleFiles = useCallback(async (files: FileList | File[]) => {
     const validFiles = Array.from(files).filter((file) =>
@@ -195,7 +201,7 @@ function App() {
       const imageId = newImages[i].id;
 
       try {
-        const result = await processImage(file, DEFAULT_CONFIG);
+        const result = await processImage(file, config);
         setImages((prev) =>
           prev.map((img) =>
             img.id === imageId
@@ -220,7 +226,7 @@ function App() {
     }
 
     setIsProcessing(false);
-  }, []);
+  }, [config]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -357,6 +363,14 @@ function App() {
         onClose={() => setLightboxOpen(false)}
         onDownload={handleLightboxDownload}
       />
+      {/* Settings Panel */}
+      <SettingsPanel
+        config={config}
+        onChange={handleConfigChange}
+        onReset={handleResetConfig}
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+      />
       {/* Header */}
       <header className="pt-8 pb-8 sm:pt-12 sm:pb-10 md:pt-16 md:pb-12 px-4">
         <div className="max-w-4xl mx-auto text-center">
@@ -380,6 +394,20 @@ function App() {
       {/* Main Content */}
       <main className="px-4">
         <div className="max-w-5xl mx-auto">
+          {/* Customize Button */}
+          <div className="flex justify-center mb-6">
+            <button
+              onClick={() => setSettingsOpen(true)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/80 backdrop-blur-sm border-2 border-primary-200 rounded-xl text-primary-700 font-semibold hover:border-primary-400 hover:bg-white hover:shadow-lg transition-all"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Customize Overlay
+            </button>
+          </div>
+
           {/* Drop Zone */}
           <div
             className={`drop-zone ${isDragging ? "dragging" : ""} cursor-pointer`}
