@@ -2,11 +2,6 @@ import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import exifr from "exifr";
 import JSZip from "jszip";
 import { Lightbox, type LightboxImage } from "./components/Lightbox";
-import { SettingsPanel } from "./components/SettingsPanel";
-import type { ImageConfig } from "./types/config";
-import { DEFAULT_CONFIG } from "./types/config";
-import { loadConfig, debouncedSaveConfig } from "./utils/configStorage";
-import { formatDate } from "./utils/formatPresets";
 
 interface ProcessedImage {
   id: string;
@@ -15,6 +10,39 @@ interface ProcessedImage {
   timestamp: string;
   usedFallback: boolean;
   status: "processing" | "done" | "error";
+}
+
+interface ImageConfig {
+  fontSize: number;
+  fontColor: string;
+  strokeColor: string;
+  strokeWidth: number;
+  position: "bottomRight" | "bottomLeft" | "topRight" | "topLeft";
+  offsetX: number;
+  offsetY: number;
+  dateFormat: string;
+}
+
+const DEFAULT_CONFIG: ImageConfig = {
+  fontSize: 120,
+  fontColor: "#FBBF24",
+  strokeColor: "#000000",
+  strokeWidth: 5,
+  position: "bottomRight",
+  offsetX: 20,
+  offsetY: 20,
+  dateFormat: "YYYY-MM-DD HH:mm:ss",
+};
+
+function formatDate(date: Date, format: string): string {
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return format
+    .replace("YYYY", date.getFullYear().toString())
+    .replace("MM", pad(date.getMonth() + 1))
+    .replace("DD", pad(date.getDate()))
+    .replace("HH", pad(date.getHours()))
+    .replace("mm", pad(date.getMinutes()))
+    .replace("ss", pad(date.getSeconds()));
 }
 
 async function extractImageMetadata(
@@ -70,8 +98,8 @@ async function processImage(
         24
       );
 
-      // Set up text styling with configurable font family
-      ctx.font = `bold ${relativeFontSize}px "${config.fontFamily}", system-ui, sans-serif`;
+      // Set up text styling
+      ctx.font = `bold ${relativeFontSize}px "Instrument Sans", system-ui, sans-serif`;
       ctx.textBaseline = "bottom";
 
       // Calculate text position
@@ -97,26 +125,11 @@ async function processImage(
           break;
       }
 
-      // Apply drop shadow if enabled
-      if (config.dropShadowEnabled) {
-        ctx.shadowBlur = config.dropShadowBlur;
-        ctx.shadowOffsetX = config.dropShadowOffsetX;
-        ctx.shadowOffsetY = config.dropShadowOffsetY;
-        ctx.shadowColor = config.dropShadowColor;
-      }
-
       // Draw text stroke
-      if (config.strokeWidth > 0) {
-        ctx.strokeStyle = config.strokeColor;
-        ctx.lineWidth = config.strokeWidth;
-        ctx.lineJoin = "round";
-        ctx.strokeText(timestamp, x, y);
-      }
-
-      // Reset shadow for fill (only apply shadow once)
-      ctx.shadowBlur = 0;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 0;
+      ctx.strokeStyle = config.strokeColor;
+      ctx.lineWidth = config.strokeWidth;
+      ctx.lineJoin = "round";
+      ctx.strokeText(timestamp, x, y);
 
       // Draw text fill
       ctx.fillStyle = config.fontColor;
@@ -149,30 +162,11 @@ function App() {
   const [images, setImages] = useState<ProcessedImage[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [config, setConfig] = useState<ImageConfig>(DEFAULT_CONFIG);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const resultsSectionRef = useRef<HTMLElement | null>(null);
   const prevProcessingRef = useRef<boolean>(false);
-
-  // Load config from localStorage on mount
-  useEffect(() => {
-    const savedConfig = loadConfig();
-    setConfig(savedConfig);
-  }, []);
-
-  // Save config to localStorage when it changes
-  const handleConfigChange = useCallback((newConfig: ImageConfig) => {
-    setConfig(newConfig);
-    debouncedSaveConfig(newConfig);
-  }, []);
-
-  const handleResetConfig = useCallback(() => {
-    setConfig(DEFAULT_CONFIG);
-    debouncedSaveConfig(DEFAULT_CONFIG);
-  }, []);
 
   const handleFiles = useCallback(async (files: FileList | File[]) => {
     const validFiles = Array.from(files).filter((file) =>
@@ -195,13 +189,13 @@ function App() {
 
     setImages((prev) => [...prev, ...newImages]);
 
-    // Process each file with current config
+    // Process each file
     for (let i = 0; i < validFiles.length; i++) {
       const file = validFiles[i];
       const imageId = newImages[i].id;
 
       try {
-        const result = await processImage(file, config);
+        const result = await processImage(file, DEFAULT_CONFIG);
         setImages((prev) =>
           prev.map((img) =>
             img.id === imageId
@@ -226,7 +220,7 @@ function App() {
     }
 
     setIsProcessing(false);
-  }, [config]);
+  }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -356,15 +350,6 @@ function App() {
 
   return (
     <div className="min-h-screen pb-16">
-      {/* Settings Panel */}
-      <SettingsPanel
-        config={config}
-        onChange={handleConfigChange}
-        onReset={handleResetConfig}
-        isOpen={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-      />
-
       <Lightbox
         open={lightboxOpen}
         images={lightboxImages}
@@ -372,21 +357,20 @@ function App() {
         onClose={() => setLightboxOpen(false)}
         onDownload={handleLightboxDownload}
       />
-
       {/* Header */}
       <header className="pt-8 pb-8 sm:pt-12 sm:pb-10 md:pt-16 md:pb-12 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center justify-center gap-2 sm:gap-3 mb-4 sm:mb-6 animate-fade-in">
             <div className="relative">
               <span className="text-5xl sm:text-6xl animate-float">📷</span>
-              <div className="absolute inset-0 blur-xl opacity-50 bg-gradient-to-r from-purple-400 to-blue-500 -z-10" />
+              <div className="absolute inset-0 blur-xl opacity-50 bg-gradient-to-r from-primary-400 to-accent-500 -z-10" />
             </div>
             <h1 className="font-bold text-4xl sm:text-5xl md:text-6xl gradient-text tracking-tight">
               MetaStamp
             </h1>
           </div>
           <p className="text-base sm:text-lg md:text-xl text-slate-600 max-w-2xl mx-auto text-balance leading-relaxed">
-            Add beautiful date and time stamps to your photos instantly. All
+            Add date and time stamps to your photos instantly. All
             processing happens in your browser — your images never leave your
             device.
           </p>
@@ -396,20 +380,6 @@ function App() {
       {/* Main Content */}
       <main className="px-4">
         <div className="max-w-5xl mx-auto">
-          {/* Customize Button */}
-          <div className="flex justify-center mb-6">
-            <button
-              onClick={() => setSettingsOpen(true)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/80 backdrop-blur-sm border-2 border-purple-200 rounded-xl text-purple-700 font-semibold hover:border-purple-400 hover:bg-white hover:shadow-lg transition-all"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              Customize Overlay
-            </button>
-          </div>
-
           {/* Drop Zone */}
           <div
             className={`drop-zone ${isDragging ? "dragging" : ""} cursor-pointer`}
@@ -431,7 +401,7 @@ function App() {
               <div className="mb-8">
                 <div className="upload-icon-container">
                   <div
-                    className={`inline-flex items-center justify-center w-24 h-24 rounded-2xl bg-gradient-to-br from-purple-400 to-blue-500 shadow-lg transition-transform ${isDragging ? "animate-bounce-subtle scale-110" : ""}`}
+                    className={`inline-flex items-center justify-center w-24 h-24 rounded-2xl bg-gradient-to-br from-primary-400 to-accent-500 shadow-glow transition-transform ${isDragging ? "animate-bounce-subtle scale-110" : ""}`}
                   >
                     <svg
                       className="w-12 h-12 text-white drop-shadow-lg"
@@ -470,7 +440,7 @@ function App() {
           <div className="mt-6 text-center">
             <div className="info-badge text-sm text-slate-700">
               <svg
-                className="w-5 h-5 text-purple-500"
+                className="w-5 h-5 text-primary-500"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -487,9 +457,9 @@ function App() {
           {/* Processing Indicator */}
           {processingCount > 0 && (
             <div className="mt-10 text-center animate-fade-in">
-              <div className="inline-flex items-center gap-3 px-8 py-4 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-purple-200">
+              <div className="inline-flex items-center gap-3 px-8 py-4 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-primary-200">
                 <div className="spinner" />
-                <span className="text-purple-700 font-semibold text-lg">
+                <span className="text-primary-700 font-semibold text-lg">
                   Processing {processingCount} image
                   {processingCount > 1 ? "s" : ""}...
                 </span>
@@ -576,10 +546,10 @@ function App() {
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
                     {image.status === "processing" ? (
-                      <div className="aspect-[4/3] bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
+                      <div className="aspect-[4/3] bg-gradient-to-br from-primary-50 to-accent-50 flex items-center justify-center">
                         <div className="text-center">
                           <div className="spinner mx-auto mb-3" />
-                          <p className="text-sm text-purple-600 font-medium">Processing...</p>
+                          <p className="text-sm text-primary-600 font-medium">Processing...</p>
                         </div>
                       </div>
                     ) : image.status === "error" ? (
@@ -622,7 +592,7 @@ function App() {
                               </p>
                               <p className="text-xs text-white/80 flex items-center gap-1">
                                 {image.usedFallback && (
-                                  <span className="inline-block w-2 h-2 rounded-full bg-amber-400" />
+                                  <span className="inline-block w-2 h-2 rounded-full bg-accent-amber" />
                                 )}
                                 {image.timestamp}
                               </p>
@@ -658,7 +628,7 @@ function App() {
                     {image.status === "done" && image.usedFallback && (
                       <div className="absolute top-4 right-4 z-10">
                         <div
-                          className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-rose-400 flex items-center justify-center shadow-lg"
+                          className="w-8 h-8 rounded-full bg-gradient-to-br from-highlight-amber to-highlight-rose flex items-center justify-center shadow-lg"
                           title="Using current date/time (no EXIF data found)"
                         >
                           <svg
@@ -683,7 +653,7 @@ function App() {
               {images.some((img) => img.usedFallback) && (
                 <div className="mt-8 text-center">
                   <div className="info-badge text-sm text-slate-600">
-                    <span className="inline-block w-3 h-3 rounded-full bg-gradient-to-br from-amber-400 to-rose-400" />
+                    <span className="inline-block w-3 h-3 rounded-full bg-gradient-to-br from-highlight-amber to-highlight-rose" />
                     Images marked used current date/time (no EXIF data found)
                   </div>
                 </div>
@@ -694,10 +664,10 @@ function App() {
       </main>
 
       {/* Footer */}
-      <footer className="mt-20 py-10 border-t border-purple-100">
+      <footer className="mt-20 py-10 border-t border-primary-100">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
-            <svg className="w-5 h-5 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-5 h-5 text-primary-500" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
             <p className="text-base font-semibold text-slate-700">
