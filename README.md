@@ -4,6 +4,14 @@
 
 Add beautiful date and time stamps to your photos instantly. All processing happens in your browser — your images never leave your device.
 
+## Screenshots
+
+### Configuration Panel
+![Configuration Panel](MetaStamp-config.png)
+
+### Processed Images
+![Processed Images](MetaStamp-processed.png)
+
 ## Features
 
 - **📅 EXIF Metadata Extraction**: Automatically reads date/time from EXIF data (DateTimeOriginal, CreateDate, ModifyDate)
