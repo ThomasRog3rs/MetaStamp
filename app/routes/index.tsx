@@ -299,18 +299,18 @@ function Home() {
   return (
     <div className="min-h-screen pb-16">
       {/* Header */}
-      <header className="pt-16 pb-12 px-4">
+      <header className="pt-8 pb-8 sm:pt-12 sm:pb-10 md:pt-16 md:pb-12 px-4">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center justify-center gap-3 mb-6 animate-fade-in">
+          <div className="inline-flex items-center justify-center gap-2 sm:gap-3 mb-4 sm:mb-6 animate-fade-in">
             <div className="relative">
-              <span className="text-6xl animate-float">📷</span>
+              <span className="text-5xl sm:text-6xl animate-float">📷</span>
               <div className="absolute inset-0 blur-xl opacity-50 bg-gradient-to-r from-primary-400 to-accent-500 -z-10" />
             </div>
-            <h1 className="font-bold text-5xl md:text-6xl gradient-text tracking-tight">
+            <h1 className="font-bold text-4xl sm:text-5xl md:text-6xl gradient-text tracking-tight">
               MetaStamp
             </h1>
           </div>
-          <p className="text-xl text-slate-600 max-w-2xl mx-auto text-balance leading-relaxed">
+          <p className="text-base sm:text-lg md:text-xl text-slate-600 max-w-2xl mx-auto text-balance leading-relaxed">
             Add beautiful date and time stamps to your photos instantly. All
             processing happens in your browser — your images never leave your
             device.
@@ -421,7 +421,7 @@ function Home() {
                     </span>
                   )}
                 </h3>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3 justify-center sm:justify-end">
                   <button onClick={handleClearAll} className="btn-secondary">
                     <svg
                       className="w-5 h-5 mr-2"

@@ -70,6 +70,7 @@
     font-weight: 600;
     border-radius: 0.75rem;
     transition: all 0.2s;
+    white-space: nowrap;
     background: linear-gradient(135deg, #a855f7 0%, #3b82f6 100%);
     color: white;
     box-shadow: 0 4px 14px 0 rgba(168, 85, 247, 0.39);
@@ -96,6 +97,7 @@
     border-radius: 0.75rem;
     border: 2px solid #e9d5ff;
     transition: all 0.2s;
+    white-space: nowrap;
   }
 
   .btn-secondary:hover {
@@ -169,6 +171,14 @@
     backdrop-filter: blur(4px);
     background: linear-gradient(135deg, rgba(243, 232, 255, 0.8) 0%, rgba(219, 234, 254, 0.8) 100%);
     border: 1px solid rgba(168, 85, 247, 0.2);
+  }
+
+  @media (max-width: 640px) {
+    .btn-primary,
+    .btn-secondary {
+      padding: 0.625rem 1rem;
+      font-size: 0.875rem;
+    }
   }
 }
 
