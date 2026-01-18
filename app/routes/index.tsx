@@ -299,15 +299,18 @@ function Home() {
   return (
     <div className="min-h-screen pb-16">
       {/* Header */}
-      <header className="pt-12 pb-8 px-4">
+      <header className="pt-16 pb-12 px-4">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-3 mb-4">
-            <span className="text-5xl">📷</span>
-            <h1 className="font-display text-4xl md:text-5xl font-bold text-slate-900">
+          <div className="inline-flex items-center justify-center gap-3 mb-6 animate-fade-in">
+            <div className="relative">
+              <span className="text-6xl animate-float">📷</span>
+              <div className="absolute inset-0 blur-xl opacity-50 bg-gradient-to-r from-primary-400 to-accent-500 -z-10" />
+            </div>
+            <h1 className="font-bold text-5xl md:text-6xl gradient-text tracking-tight">
               MetaStamp
             </h1>
           </div>
-          <p className="text-lg text-slate-600 max-w-2xl mx-auto text-balance">
+          <p className="text-xl text-slate-600 max-w-2xl mx-auto text-balance leading-relaxed">
             Add beautiful date and time stamps to your photos instantly. All
             processing happens in your browser — your images never leave your
             device.
@@ -326,7 +329,7 @@ function Home() {
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
           >
-            <div className="py-16 px-8 md:py-24 md:px-16 text-center">
+            <div className="py-20 px-8 md:py-28 md:px-16 text-center">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -336,45 +339,49 @@ function Home() {
                 className="hidden"
               />
 
-              <div className="mb-6">
-                <div
-                  className={`inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-stamp-100 to-stamp-200 ${isDragging ? "animate-bounce-subtle" : ""}`}
-                >
-                  <svg
-                    className="w-10 h-10 text-stamp-600"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={1.5}
+              <div className="mb-8">
+                <div className="upload-icon-container">
+                  <div
+                    className={`inline-flex items-center justify-center w-24 h-24 rounded-2xl bg-gradient-to-br from-primary-400 to-accent-500 shadow-glow transition-transform ${isDragging ? "animate-bounce-subtle scale-110" : ""}`}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
-                    />
-                  </svg>
+                    <svg
+                      className="w-12 h-12 text-white drop-shadow-lg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
+                      />
+                    </svg>
+                  </div>
                 </div>
               </div>
 
-              <h2 className="text-xl md:text-2xl font-semibold text-slate-800 mb-2">
+              <h2 className="text-2xl md:text-3xl font-bold text-slate-800 mb-3">
                 {isDragging
                   ? "Drop your images here!"
-                  : "Drag & drop your images"}
+                  : "Upload Files"}
               </h2>
-              <p className="text-slate-500 mb-4">
-                or click to browse from your device
+              <p className="text-lg text-slate-500 mb-6">
+                {isDragging
+                  ? "Release to start processing"
+                  : "Click to upload a file or drag and drop"}
               </p>
-              <p className="text-sm text-slate-400">
-                Supports JPEG, PNG, WebP • Multiple files at once
+              <p className="text-sm text-slate-400 font-medium">
+                JPEG, PNG, WebP • Multiple files supported
               </p>
             </div>
           </div>
 
           {/* Helper Text */}
-          <div className="mt-4 text-center">
-            <p className="text-sm text-slate-500 inline-flex items-center gap-2">
+          <div className="mt-6 text-center">
+            <div className="info-badge text-sm text-slate-700">
               <svg
-                className="w-4 h-4 text-accent-amber"
+                className="w-5 h-5 text-primary-500"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -384,17 +391,16 @@ function Home() {
                   clipRule="evenodd"
                 />
               </svg>
-              Current date/time will be used if EXIF metadata is missing from
-              your photos
-            </p>
+              Current date/time will be used if EXIF metadata is missing
+            </div>
           </div>
 
           {/* Processing Indicator */}
           {processingCount > 0 && (
-            <div className="mt-8 text-center animate-fade-in">
-              <div className="inline-flex items-center gap-3 px-6 py-3 bg-stamp-50 rounded-full border border-stamp-200">
+            <div className="mt-10 text-center animate-fade-in">
+              <div className="inline-flex items-center gap-3 px-8 py-4 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-primary-200">
                 <div className="spinner" />
-                <span className="text-stamp-700 font-medium">
+                <span className="text-primary-700 font-semibold text-lg">
                   Processing {processingCount} image
                   {processingCount > 1 ? "s" : ""}...
                 </span>
@@ -404,13 +410,13 @@ function Home() {
 
           {/* Results Section */}
           {images.length > 0 && (
-            <section className="mt-12 animate-fade-in">
+            <section className="mt-16 animate-fade-in">
               {/* Actions Bar */}
-              <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-                <h3 className="text-xl font-semibold text-slate-800">
+              <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+                <h3 className="text-2xl font-bold gradient-text">
                   Processed Images
                   {doneImages.length > 0 && (
-                    <span className="ml-2 text-sm font-normal text-slate-500">
+                    <span className="ml-3 text-base font-semibold text-slate-500">
                       ({doneImages.length} ready)
                     </span>
                   )}
@@ -455,7 +461,7 @@ function Home() {
               </div>
 
               {/* Image Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                 {images.map((image, index) => (
                   <div
                     key={image.id}
@@ -463,17 +469,17 @@ function Home() {
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
                     {image.status === "processing" ? (
-                      <div className="aspect-[4/3] bg-slate-100 flex items-center justify-center">
+                      <div className="aspect-[4/3] bg-gradient-to-br from-primary-50 to-accent-50 flex items-center justify-center">
                         <div className="text-center">
                           <div className="spinner mx-auto mb-3" />
-                          <p className="text-sm text-slate-500">Processing...</p>
+                          <p className="text-sm text-primary-600 font-medium">Processing...</p>
                         </div>
                       </div>
                     ) : image.status === "error" ? (
-                      <div className="aspect-[4/3] bg-red-50 flex items-center justify-center">
+                      <div className="aspect-[4/3] bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center">
                         <div className="text-center px-4">
                           <svg
-                            className="w-10 h-10 text-red-400 mx-auto mb-2"
+                            className="w-10 h-10 text-red-500 mx-auto mb-2"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -485,18 +491,18 @@ function Home() {
                               d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                             />
                           </svg>
-                          <p className="text-sm text-red-600">
+                          <p className="text-sm text-red-600 font-medium">
                             Failed to process
                           </p>
                         </div>
                       </div>
                     ) : (
                       <>
-                        <div className="aspect-[4/3] overflow-hidden">
+                        <div className="aspect-[4/3] overflow-hidden rounded-t-2xl">
                           <img
                             src={image.processedUrl}
                             alt={image.originalName}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                         </div>
 
@@ -519,15 +525,15 @@ function Home() {
                                 e.stopPropagation();
                                 handleDownloadSingle(image);
                               }}
-                              className="p-2 bg-white/20 hover:bg-white/30 rounded-lg backdrop-blur-sm transition-colors"
+                              className="p-2.5 bg-white/20 hover:bg-white/30 rounded-xl backdrop-blur-md transition-all hover:scale-110"
                               title="Download"
                             >
                               <svg
-                                className="w-5 h-5 text-white"
+                                className="w-5 h-5 text-white drop-shadow"
                                 fill="none"
                                 viewBox="0 0 24 24"
                                 stroke="currentColor"
-                                strokeWidth={2}
+                                strokeWidth={2.5}
                               >
                                 <path
                                   strokeLinecap="round"
@@ -543,13 +549,13 @@ function Home() {
 
                     {/* Fallback indicator */}
                     {image.status === "done" && image.usedFallback && (
-                      <div className="absolute top-3 right-3 z-10">
+                      <div className="absolute top-4 right-4 z-10">
                         <div
-                          className="w-6 h-6 rounded-full bg-accent-amber flex items-center justify-center shadow-lg"
+                          className="w-8 h-8 rounded-full bg-gradient-to-br from-highlight-amber to-highlight-rose flex items-center justify-center shadow-lg"
                           title="Using current date/time (no EXIF data found)"
                         >
                           <svg
-                            className="w-4 h-4 text-white"
+                            className="w-5 h-5 text-white drop-shadow"
                             fill="currentColor"
                             viewBox="0 0 20 20"
                           >
@@ -568,11 +574,11 @@ function Home() {
 
               {/* Legend */}
               {images.some((img) => img.usedFallback) && (
-                <div className="mt-6 text-center">
-                  <p className="text-sm text-slate-500 inline-flex items-center gap-2">
-                    <span className="inline-block w-3 h-3 rounded-full bg-accent-amber" />
+                <div className="mt-8 text-center">
+                  <div className="info-badge text-sm text-slate-600">
+                    <span className="inline-block w-3 h-3 rounded-full bg-gradient-to-br from-highlight-amber to-highlight-rose" />
                     Images marked used current date/time (no EXIF data found)
-                  </p>
+                  </div>
                 </div>
               )}
             </section>
@@ -581,8 +587,16 @@ function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="mt-16 py-8 border-t border-slate-200">
+      <footer className="mt-20 py-10 border-t border-primary-100">
         <div className="max-w-4xl mx-auto px-4 text-center">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <svg className="w-5 h-5 text-primary-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <p className="text-base font-semibold text-slate-700">
+              100% Private & Secure
+            </p>
+          </div>
           <p className="text-sm text-slate-500">
             All processing happens locally in your browser. Your images are
             never uploaded to any server.
