@@ -165,6 +165,8 @@ function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const resultsSectionRef = useRef<HTMLElement | null>(null);
+  const prevProcessingRef = useRef<boolean>(false);
 
   const handleFiles = useCallback(async (files: FileList | File[]) => {
     const validFiles = Array.from(files).filter((file) =>
@@ -334,6 +336,14 @@ function App() {
       setLightboxIndex(Math.max(0, lightboxImages.length - 1));
     }
   }, [lightboxOpen, lightboxImages.length, lightboxIndex]);
+
+  useEffect(() => {
+    if (!resultsSectionRef.current) return;
+    if (prevProcessingRef.current && !isProcessing && doneImages.length > 0) {
+      resultsSectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    prevProcessingRef.current = isProcessing;
+  }, [isProcessing, doneImages.length]);
   const processingCount = images.filter(
     (img) => img.status === "processing"
   ).length;
@@ -459,7 +469,7 @@ function App() {
 
           {/* Results Section */}
           {images.length > 0 && (
-            <section className="mt-16 animate-fade-in">
+            <section ref={resultsSectionRef} className="mt-16 animate-fade-in">
               {/* Actions Bar */}
               <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
                 <h3 className="text-2xl font-bold gradient-text">
