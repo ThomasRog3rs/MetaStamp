@@ -147,7 +147,7 @@ export function OverlayPreview({ config }: OverlayPreviewProps) {
   }, [config, timestamp, sampleImage]);
   
   return (
-    <div className="relative rounded-2xl overflow-hidden border border-white/20 bg-slate-900/50 backdrop-blur-sm">
+    <div className="relative rounded-2xl overflow-hidden border-2 border-purple-200/50 bg-white/60 backdrop-blur-sm shadow-lg">
       <canvas
         ref={canvasRef}
         width={SAMPLE_IMAGE_WIDTH}
@@ -155,9 +155,13 @@ export function OverlayPreview({ config }: OverlayPreviewProps) {
         className="w-full h-auto"
         style={{ imageRendering: "auto" }}
       />
-      <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-xs text-white/60">
-        <span>Preview</span>
-        <span className="font-mono">{timestamp}</span>
+      <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-xs font-medium">
+        <span className="px-2 py-1 bg-white/90 backdrop-blur-sm rounded-lg text-purple-700 shadow-sm border border-purple-200">
+          Preview
+        </span>
+        <span className="px-2 py-1 bg-white/90 backdrop-blur-sm rounded-lg font-mono text-slate-700 shadow-sm border border-purple-200">
+          {timestamp}
+        </span>
       </div>
     </div>
   );
