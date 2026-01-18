@@ -1,6 +1,7 @@
-import { useState, useCallback, useRef } from "react";
+import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import exifr from "exifr";
 import JSZip from "jszip";
+import { Lightbox, type LightboxImage } from "./components/Lightbox";
 
 interface ProcessedImage {
   id: string;
@@ -162,6 +163,8 @@ function App() {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   const handleFiles = useCallback(async (files: FileList | File[]) => {
     const validFiles = Array.from(files).filter((file) =>
@@ -284,15 +287,66 @@ function App() {
       }
     });
     setImages([]);
+    setLightboxOpen(false);
   }, [images]);
 
   const doneImages = images.filter((img) => img.status === "done");
+  const doneImagesInGridOrder = useMemo(
+    () => images.filter((img) => img.status === "done"),
+    [images]
+  );
+  const lightboxImages: LightboxImage[] = useMemo(
+    () =>
+      doneImagesInGridOrder.map((img) => ({
+        src: img.processedUrl,
+        alt: img.originalName,
+        subtitle: img.timestamp,
+        downloadName: `stamped_${img.originalName.replace(/\.[^/.]+$/, "")}.png`,
+      })),
+    [doneImagesInGridOrder]
+  );
+
+  const openLightboxForId = useCallback(
+    (imageId: string) => {
+      const idx = doneImagesInGridOrder.findIndex((img) => img.id === imageId);
+      if (idx < 0) return;
+      setLightboxIndex(idx);
+      setLightboxOpen(true);
+    },
+    [doneImagesInGridOrder]
+  );
+
+  const handleLightboxDownload = useCallback(
+    (image: LightboxImage) => {
+      const link = document.createElement("a");
+      link.href = image.src;
+      link.download = image.downloadName || "image";
+      link.click();
+    },
+    []
+  );
+
+  // If the list changes while open (e.g. clear all), keep state consistent.
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    if (lightboxImages.length === 0) setLightboxOpen(false);
+    if (lightboxIndex >= lightboxImages.length) {
+      setLightboxIndex(Math.max(0, lightboxImages.length - 1));
+    }
+  }, [lightboxOpen, lightboxImages.length, lightboxIndex]);
   const processingCount = images.filter(
     (img) => img.status === "processing"
   ).length;
 
   return (
     <div className="min-h-screen pb-16">
+      <Lightbox
+        open={lightboxOpen}
+        images={lightboxImages}
+        startIndex={lightboxIndex}
+        onClose={() => setLightboxOpen(false)}
+        onDownload={handleLightboxDownload}
+      />
       {/* Header */}
       <header className="pt-16 pb-12 px-4">
         <div className="max-w-4xl mx-auto text-center">
@@ -461,6 +515,24 @@ function App() {
                   <div
                     key={image.id}
                     className="image-card group animate-slide-up"
+                    role={image.status === "done" ? "button" : undefined}
+                    tabIndex={image.status === "done" ? 0 : -1}
+                    aria-label={
+                      image.status === "done"
+                        ? `Preview ${image.originalName}`
+                        : undefined
+                    }
+                    onKeyDown={(e) => {
+                      if (image.status !== "done") return;
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        openLightboxForId(image.id);
+                      }
+                    }}
+                    onClick={() => {
+                      if (image.status !== "done") return;
+                      openLightboxForId(image.id);
+                    }}
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
                     {image.status === "processing" ? (
