@@ -1,5 +1,7 @@
 # MetaStamp 📷
 
+> **Disclaimer:** This project was vibe coded and I did not write any of the code myself.
+
 Add beautiful date and time stamps to your photos instantly. All processing happens in your browser — your images never leave your device.
 
 ## Features
