@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import type { ImageConfig, Position } from "../types/config";
-import { DEFAULT_CONFIG, FONT_OPTIONS } from "../types/config";
+import { FONT_OPTIONS } from "../types/config";
 import { DATE_FORMAT_PRESETS, TIME_FORMAT_PRESETS, combineFormats, getPreviewTimestamp } from "../utils/formatPresets";
 import { OverlayPreview } from "./OverlayPreview";
 
